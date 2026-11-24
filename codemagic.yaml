@@ -1,4 +1,3 @@
-```yaml
 workflows:
   quotation-editor-ios:
     name: Quotation Editor - iOS IPA
@@ -69,4 +68,3 @@ workflows:
       - QuotationEditor-unsigned.ipa
       - /tmp/xcodebuild_logs/*.log
       - build/DerivedData/Build/Products/Release-iphoneos/*.app
-```
