@@ -38,6 +38,7 @@ struct QuotationWebView: UIViewRepresentable {
     final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler, UIDocumentPickerDelegate {
         weak var webView: WKWebView?
         private var pendingExportURL: URL?
+        private var filePickerDelegate: FilePickerDelegate?
 
         func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
             guard let body = message.body as? [String: Any],
@@ -168,15 +169,35 @@ struct QuotationWebView: UIViewRepresentable {
         }
 
         // Allows HTML file inputs to open the iOS Files picker.
-        func webView(_ webView: WKWebView, runOpenPanelWith parameters: WKOpenPanelParameters,
-                     initiatedByFrame frame: WKFrameInfo,
-                     completionHandler: @escaping ([URL]?) -> Void) {
-            let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.item], asCopy: true)
-            let delegate = FilePickerDelegate(completion: completionHandler)
-            objc_setAssociatedObject(picker, "filePickerDelegate", delegate, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-            picker.delegate = delegate
-            topViewController()?.present(picker, animated: true)
-        }
+        
+@available(iOS 18.4, *)
+func webView(
+    _ webView: WKWebView,
+    runOpenPanelWith parameters: WKOpenPanelParameters,
+    initiatedByFrame frame: WKFrameInfo,
+    completionHandler: @escaping ([URL]?) -> Void
+) {
+    let picker = UIDocumentPickerViewController(
+        forOpeningContentTypes: [.item],
+        asCopy: true
+    )
+
+    let delegate = FilePickerDelegate { [weak self] urls in
+        self?.filePickerDelegate = nil
+        completionHandler(urls)
+    }
+
+    filePickerDelegate = delegate
+    picker.delegate = delegate
+
+    guard let presenter = topViewController() else {
+        filePickerDelegate = nil
+        completionHandler(nil)
+        return
+    }
+
+    presenter.present(picker, animated: true)
+}
     }
 }
 
